@@ -27,7 +27,7 @@ module fu_store
   logic [2:0]                offset;
 
   always_comb begin
-    fu_store_out_o.valid = (dec_ex_i.fu == STORE);
+    fu_store_out_o.valid = (dec_ex_i.fu == FU_STORE);
     
     // Calculate full address and extract offset
     addr = dec_ex_i.rs1_data + {{(64-20){dec_ex_i.imm[19]}}, dec_ex_i.imm};

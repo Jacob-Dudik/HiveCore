@@ -29,7 +29,7 @@ module fu_load
 
   always_comb begin
     // Match FU
-    fu_load_out_o.valid = (dec_ex_i.fu == LOAD);
+    fu_load_out_o.valid = (dec_ex_i.fu == FU_LOAD);
     
     // Calculate address and extract offset
     addr = dec_ex_i.rs1_data + {{(64-20){dec_ex_i.imm[19]}}, dec_ex_i.imm};

@@ -10,6 +10,7 @@
 `ifndef INTERFACE_STRUCT_PKG
 `define INTERFACE_STRUCT_PKG
 package interface_struct_pkg;
+  import core_pkg::*;
 
 // ============================================
 //          Pipeline Stage Interfaces

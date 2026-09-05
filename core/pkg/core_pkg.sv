@@ -79,20 +79,20 @@ typedef enum logic [3:0] {
   BGEU      = 4'h7,
 
   // Jumps
-  JAL       = 4'h2,
-  JALR      = 4'h3
+  BR_JAL    = 4'h2,
+  BR_JALR   = 4'h3
 } branch_uOP_e;
 
 // Functional Unit Identifiers
 typedef enum logic [2:0] {
-  NONE,
-  ALU,
-  LOAD,
-  STORE,
-  BRANCH,
-  MUL,
-  DIV,
-  SYS
+  FU_NONE,
+  FU_ALU,
+  FU_LOAD,
+  FU_STORE,
+  FU_BRANCH,
+  FU_MUL,
+  FU_DIV,
+  FU_SYS
 } func_unit_e;
 
 //=========================================

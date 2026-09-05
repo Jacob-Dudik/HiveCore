@@ -33,7 +33,7 @@ module fu_alu
   // ============================================
   always_comb begin
     alu_op              = alu_uOP_e'(dec_ex_i.uOP);
-    fu_alu_out_o.valid  = (dec_ex_i.fu == ALU);
+    fu_alu_out_o.valid  = (dec_ex_i.fu == FU_ALU);
     fu_alu_out_o.result = '0;
     res32               = '0;
 

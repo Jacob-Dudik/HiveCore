@@ -34,7 +34,7 @@ module fu_branch
   // ============================================
   always_comb begin
     // Valid when input functional unit matches BRANCH
-    fu_branch_out_o.valid     = (dec_ex_i.fu == BRANCH);
+    fu_branch_out_o.valid     = (dec_ex_i.fu == FU_BRANCH);
     fu_branch_out_o.target_pc = '0;
     fu_branch_out_o.taken     = '0;
 
@@ -75,7 +75,7 @@ module fu_branch
       end
 
       JALR: begin
-        fu_branch_out_o.target_pc = {(dec_ex_i.rs1_data + imm_sext)[63:1], 1'b0}; // JALR result must be even
+        fu_branch_out_o.target_pc = (dec_ex_i.rs1_data + imm_sext) & ~64'b1; // JALR result must be even
         fu_branch_out_o.taken     = 1'b1;
       end
     endcase

@@ -24,6 +24,7 @@ module decode
     input  logic rst_n,
 
     input  logic flush,
+    input  logic stall_i,
 
     input  logic               [FETCH_WIDTH-1:0]                      instr_valid_i,
     input  logic               [FETCH_WIDTH-1:0] [INSTR_WIDTH-1:0]    instr_i,
@@ -220,8 +221,8 @@ module decode
         end
 
         AUIPC: begin
-          DE_if_d[idx].uOP   = 4'h8;
-          DE_if_d[idx].fu    = BRANCH;
+          DE_if_d[idx].uOP   = 4'b1_010;
+          DE_if_d[idx].fu    = ALU;
           DE_if_d[idx].imm   = imm_u_type[idx];
           DE_if_d[idx].en_wb = '1;
         end
@@ -246,6 +247,8 @@ module decode
 
       DE_if_d[idx].rs2_addr = rs2[idx];
       DE_if_d[idx].rs2_data = rs2_rd_data[idx];
+      
+      DE_if_d[idx].rd_addr  = rd[idx];
     end
   end
   
@@ -257,17 +260,17 @@ module decode
   always_ff @(posedge clk) begin
     if (!rst_n || flush) begin
       instr_valid_o <= '0;
-    end else begin
-      // TODO: will need to impliment stalling for the in-order core
+    end else if (!stall_i) begin
       instr_valid_o <= instr_valid_i;
     end
   end
 
   // Pass data along when the new instruction is valid, otherwise clock gate
-  // - no need to reset the datapath
   always_ff @(posedge clk) begin
     for (int idx = 0; idx < FETCH_WIDTH; idx++) begin
-      DE_if_o[idx] = instr_valid_i[idx] ? DE_if_d[idx] : DE_if_o[idx]; 
+      if (!stall_i) begin
+        DE_if_o[idx] <= instr_valid_i[idx] ? DE_if_d[idx] : DE_if_o[idx]; 
+      end
     end
   end
 

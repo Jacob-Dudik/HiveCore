@@ -55,18 +55,22 @@ typedef enum logic [3:0] {
   ALU_AND   = 4'b0_111,
   ALU_SUB   = 4'b1_000,
   ALU_SRA   = 4'b1_101,
-  ALU_LUI   = 4'b1_001
+  ALU_LUI   = 4'b1_001,
+  ALU_AUIPC = 4'b1_010
 } alu_uOP_e;
 
 typedef enum logic [3:0] {
   LSU_LB_SB = 4'h0,
   LSU_LH_SH = 4'h1,
   LSU_LW_SW = 4'h2,
+  LSU_LD_SD = 4'h3,
   LSU_LBU   = 4'h4,
-  LSU_LHU   = 4'h5
+  LSU_LHU   = 4'h5,
+  LSU_LWU   = 4'h6
 } lsu_uOP_e;
 
 typedef enum logic [3:0] {
+  // Branches
   BEQ       = 4'h0,
   BNE       = 4'h1,
   BLT       = 4'h4,
@@ -74,10 +78,9 @@ typedef enum logic [3:0] {
   BLTU      = 4'h6,
   BGEU      = 4'h7,
 
+  // Jumps
   JAL       = 4'h2,
-  JALR      = 4'h3,
-
-  AUIPC     = 4'h8
+  JALR      = 4'h3
 } branch_uOP_e;
 
 // Functional Unit Identifiers

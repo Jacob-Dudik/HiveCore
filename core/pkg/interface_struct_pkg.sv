@@ -35,8 +35,11 @@ typedef struct packed {
   logic [4:0]                rd_addr;         // Destination register
   logic                      en_wb;           // Writeback enable
   logic [INT_REG_WIDTH-1:0]  result;          // Result to write back
+  
+  // NOTE: These branch signals are passed to WB for future OoO/ROB architectural 
   logic [MEM_ADDR_WIDTH-1:0] next_pc;         // Next PC (for branches/jumps)
   logic                      branch_taken;    // Branch was taken
+  
   logic                      exception;       // TODO: Handle exceptions in WB/Commit (e.g. traps)
   logic                      valid;           // Overall execute valid
 } execute_wb_if_t;

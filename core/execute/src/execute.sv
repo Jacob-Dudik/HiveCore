@@ -35,7 +35,11 @@ module execute
     output logic                      mem_is_store_o,
     output logic [MEM_ADDR_WIDTH-1:0] mem_addr_o,
     output logic [INT_REG_WIDTH-1:0]  mem_wdata_o,
-    output logic [7:0]                mem_be_o
+    output logic [7:0]                mem_be_o,
+
+    // Early branch resolution
+    output logic                      branch_taken_o,
+    output logic [MEM_ADDR_WIDTH-1:0] target_pc_o
   );
 
   // ============================================
@@ -85,6 +89,11 @@ module execute
 
   // Output stall request if we have a valid memory request but memory is not ready
   assign mem_stall_o = mem_req_valid_o & ~mem_ready_i;
+
+  // Early branch resolution (combinational) to minimize branch penalty
+  // Only valid if the current execution stage is valid and it's actually a branch instruction!
+  assign branch_taken_o = branch_out.valid & branch_out.taken & valid_i;
+  assign target_pc_o    = branch_out.target_pc;
 
   always_comb begin
     // Default assignments

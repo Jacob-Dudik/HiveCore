@@ -12,7 +12,7 @@ module fetch
   import core_pkg::*;
   #(
     parameter FETCH_WIDTH = 1,
-    parameter RESET_PC    = 64'h0000_0000_0000_0000
+    parameter RESET_PC    = 64'h8000_0000_0000_0000
   )
   (
     input  logic                                        clk,
@@ -68,7 +68,7 @@ module fetch
   // ============================================
   //          Memory Request Interface           
   // ============================================
-  // Always request memory unless we are in reset
+  // Request instruction from the current PC register
   assign imem_req_addr_o  = pc_q;
   assign imem_req_valid_o = 1'b1;
 

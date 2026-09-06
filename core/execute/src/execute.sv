@@ -39,7 +39,14 @@ module execute
 
     // Early branch resolution
     output logic                      branch_taken_o,
-    output logic [MEM_ADDR_WIDTH-1:0] target_pc_o
+    output logic [MEM_ADDR_WIDTH-1:0] target_pc_o,
+
+    // Send forwarding data (to Decode)
+    output logic                      ex_fwd_valid_o,
+    output logic [4:0]                ex_fwd_rd_addr_o,
+    output logic                      ex_fwd_en_wb_o,
+    output logic                      ex_fwd_is_load_o,
+    output logic [INT_REG_WIDTH-1:0]  ex_fwd_data_o
   );
 
   // ============================================
@@ -95,6 +102,13 @@ module execute
   assign branch_taken_o = branch_out.valid & branch_out.taken & valid_i;
   assign target_pc_o    = branch_out.target_pc;
 
+  // Forwarding Outputs
+  assign ex_fwd_valid_o   = valid_i;
+  assign ex_fwd_is_load_o = (dec_ex_i.fu == FU_LOAD);
+  assign ex_fwd_rd_addr_o = ex_wb_d.rd_addr;
+  assign ex_fwd_en_wb_o   = ex_wb_d.en_wb;
+  assign ex_fwd_data_o    = ex_wb_d.result;
+
   always_comb begin
     // Default assignments
     ex_wb_d = '0;
@@ -105,13 +119,13 @@ module execute
 
     // Select the correct result from the FUs
     case (dec_ex_i.fu)
-      ALU: begin
+      FU_ALU: begin
         ex_wb_d.valid     = alu_out.valid;
         ex_wb_d.result    = alu_out.result;
         ex_wb_d.exception = 1'b0;
       end
 
-      BRANCH: begin
+      FU_BRANCH: begin
         ex_wb_d.valid        = branch_out.valid;
         ex_wb_d.result       = dec_ex_i.pc + 4; // Return address for jumps
         ex_wb_d.next_pc      = branch_out.target_pc;
@@ -119,14 +133,14 @@ module execute
         ex_wb_d.exception    = 1'b0;
       end
       
-      LOAD: begin
+      FU_LOAD: begin
         // The result of a load comes from the memory return data, formatted by fu_load
         ex_wb_d.valid     = load_out.valid;
         ex_wb_d.result    = load_out.formatted_data;
         ex_wb_d.exception = load_out.exception;
       end
       
-      STORE: begin
+      FU_STORE: begin
         ex_wb_d.valid     = store_out.valid;
         ex_wb_d.exception = store_out.exception;
       end
@@ -139,17 +153,18 @@ module execute
   
   // Always pass along valid unless a stall or flush occurs
   always_ff @(posedge clk) begin
-    if (!rst_n || flush || stall_i) begin
+    if (!rst_n || flush) begin
       valid_o <= '0;
-    end else begin
-      valid_o <= valid_i;
-    end
-  end
-
-  // Pass data along when the new instruction is valid, otherwise clock gate
-  always_ff @(posedge clk) begin
-    if (!stall_i) begin
-      ex_wb_o <= valid_i ? ex_wb_d : ex_wb_o; 
+      ex_wb_o <= '0;
+    end else if (!stall_i) begin
+      valid_o <= valid_i && !branch_out.taken && !ex_wb_d.exception;
+      ex_wb_o <= ex_wb_d;
+      
+      if (valid_i) begin
+          $display("Time %0t: EXECUTING PC: %x, FU: %x, uOP: %x, RS1: %x, RS2: %x, IMM: %x", 
+                   $time, dec_ex_i.pc, dec_ex_i.fu, dec_ex_i.uOP, dec_ex_i.rs1_data, dec_ex_i.rs2_data, dec_ex_i.imm);
+          $display("          => Result: %x, rd: %d, en_wb: %d", ex_wb_d.result, ex_wb_d.rd_addr, ex_wb_d.en_wb);
+      end
     end
   end
 

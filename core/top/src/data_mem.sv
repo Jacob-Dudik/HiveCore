@@ -45,29 +45,41 @@ module data_mem
   // Byte-addressable memory array
   logic [7:0] mem [0:MEM_SIZE_BYTES-1];
 
+  // Load firmware into memory at startup (so .data sections are initialized!)
+  initial begin
+    $readmemh("firmware.hex", mem);
+  end
+
   logic [INT_REG_WIDTH-1:0] raw_rdata;
+
+  // Mask addresses to fit physical memory array, effectively mapping 0x8000_0000 to 0
+  logic [MEM_ADDR_WIDTH-1:0] masked_wr_addr;
+  assign masked_wr_addr = wr_addr_i & (MEM_SIZE_BYTES - 1);
 
   // ============================================
   //                 Write Port                  
   // ============================================
   always_ff @(posedge clk) begin
     if (wr_en_i) begin
-      if (wr_be_i[0]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b000}] <= wr_data_i[7:0];
-      if (wr_be_i[1]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b001}] <= wr_data_i[15:8];
-      if (wr_be_i[2]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b010}] <= wr_data_i[23:16];
-      if (wr_be_i[3]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b011}] <= wr_data_i[31:24];
-      if (wr_be_i[4]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b100}] <= wr_data_i[39:32];
-      if (wr_be_i[5]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b101}] <= wr_data_i[47:40];
-      if (wr_be_i[6]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b110}] <= wr_data_i[55:48];
-      if (wr_be_i[7]) mem[{wr_addr_i[MEM_ADDR_WIDTH-1:3], 3'b111}] <= wr_data_i[63:56];
+      if (wr_be_i[0]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b000}] <= wr_data_i[7:0];
+      if (wr_be_i[1]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b001}] <= wr_data_i[15:8];
+      if (wr_be_i[2]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b010}] <= wr_data_i[23:16];
+      if (wr_be_i[3]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b011}] <= wr_data_i[31:24];
+      if (wr_be_i[4]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b100}] <= wr_data_i[39:32];
+      if (wr_be_i[5]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b101}] <= wr_data_i[47:40];
+      if (wr_be_i[6]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b110}] <= wr_data_i[55:48];
+      if (wr_be_i[7]) mem[{masked_wr_addr[MEM_ADDR_WIDTH-1:3], 3'b111}] <= wr_data_i[63:56];
     end
   end
 
   // ============================================
   //                 Read Port                   
   // ============================================
+  logic [MEM_ADDR_WIDTH-1:0] masked_rd_addr;
+  assign masked_rd_addr = rd_addr_i & (MEM_SIZE_BYTES - 1);
+  
   logic [MEM_ADDR_WIDTH-1:0] aligned_rd_addr;
-  assign aligned_rd_addr = {rd_addr_i[MEM_ADDR_WIDTH-1:3], 3'b000};
+  assign aligned_rd_addr = {masked_rd_addr[MEM_ADDR_WIDTH-1:3], 3'b000};
 
   always_comb begin
     rd_data_o = '0;

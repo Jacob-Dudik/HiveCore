@@ -17,7 +17,8 @@ module execute
     input  logic                      rst_n,
 
     input  logic                      flush,
-    input  logic                      stall_i,
+    input  logic                      ready_i,
+    output logic                      ready_o,
     input  logic                      valid_i,
     input  decode_execute_if_t        dec_ex_i,
 
@@ -27,7 +28,6 @@ module execute
 
     // ========= Outputs =========
     output logic                      valid_o,
-    output logic                      mem_stall_o,
     output execute_wb_if_t            ex_wb_o,
 
     // Memory interface outputs
@@ -94,8 +94,10 @@ module execute
   assign mem_wdata_o     = store_out.data;
   assign mem_be_o        = store_out.be;
 
-  // Output stall request if we have a valid memory request but memory is not ready
-  assign mem_stall_o = mem_req_valid_o & ~mem_ready_i;
+  // Execute is ready if we are not stalled by memory, AND the next stage is ready
+  logic mem_stall;
+  assign mem_stall = mem_req_valid_o & ~mem_ready_i;
+  assign ready_o = ~mem_stall & ready_i;
 
   // Early branch resolution (combinational) to minimize branch penalty
   // Only valid if the current execution stage is valid and it's actually a branch instruction!
@@ -151,12 +153,12 @@ module execute
   //             Output Register Stage         
   // ============================================
   
-  // Always pass along valid unless a stall or flush occurs
+  // Only advance the pipeline register if we are ready (which includes ready_i from next stage)
   always_ff @(posedge clk) begin
     if (!rst_n || flush) begin
       valid_o <= '0;
       ex_wb_o <= '0;
-    end else if (!stall_i) begin
+    end else if (ready_o) begin
       valid_o <= valid_i && !branch_out.taken && !ex_wb_d.exception;
       ex_wb_o <= ex_wb_d;
       

@@ -20,7 +20,7 @@ module fetch
 
     // Pipeline Control
     input  logic                                        flush_i,
-    input  logic                                        stall_i,
+    input  logic                                        ready_i,
 
     // Branch / Jump interface
     input  logic                                        branch_taken_i,
@@ -51,8 +51,8 @@ module fetch
       pc_d = target_pc_i;
     end 
     
-    // Normal PC increment if not stalled, not flushed, and memory is ready
-    else if (!stall_i && imem_ready_i && !flush_i) begin
+    // Normal PC increment if ready, not flushed, and memory is ready
+    else if (ready_i && imem_ready_i && !flush_i) begin
       pc_d = pc_q + (FETCH_WIDTH * 4);
     end
   end
@@ -81,7 +81,7 @@ module fetch
       instr_o       <= '0;
       instr_pc_o    <= '0;
 
-    end else if (!stall_i) begin
+    end else if (ready_i) begin
       // Instruction memory is ready for read
       if (imem_ready_i) begin
         // TODO: adjust imem to support multiple reads
@@ -93,7 +93,7 @@ module fetch
           instr_pc_o[i] <= pc_q + (i * 4);
         end
       end else begin
-        // If memory isn't ready but we aren't stalling, insert a pipeline bubble
+        // If memory isn't ready but we are advancing, insert a pipeline bubble
         instr_valid_o <= '0;
       end
     end

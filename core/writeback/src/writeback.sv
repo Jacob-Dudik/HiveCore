@@ -28,8 +28,15 @@ module writeback
     output logic [MEM_ADDR_WIDTH-1:0]           target_pc_o,
 
     // Trap / Exception Interface
-    output logic                                exception_o
+    // Trap / Exception Interface
+    output logic                                exception_o,
+
+    // Backpressure Interface
+    output logic                                ready_o
   );
+
+  // Writeback is a pure combinational commit stage, so it is always ready
+  assign ready_o = 1'b1;
 
   always_comb begin
     // Default outputs
@@ -54,6 +61,7 @@ module writeback
         rf_wr_valid_o = 1'b1;
         rf_wr_addr_o  = ex_wb_i.rd_addr;
         rf_wr_data_o  = ex_wb_i.result;
+        $display("Time %0t: WRITEBACK: rd=%d, data=%x", $time, rf_wr_addr_o, rf_wr_data_o);
       end
 
       // ============================================

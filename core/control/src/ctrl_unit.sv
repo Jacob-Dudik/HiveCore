@@ -16,11 +16,7 @@ module ctrl_unit
     input  logic                      rst_n,
     input  logic                      global_flush_i,
 
-    // Hazard inputs from Decode
-    input  logic                      dec_load_use_stall_i,
-
     // Branch / Memory inputs from Execute
-    input  logic                      ex_mem_stall_i,
     input  logic [MEM_ADDR_WIDTH-1:0] ex_pc_i,           // PC of the instruction currently in Execute
     input  logic                      ex_branch_taken_i, // Resolved branch outcome
     input  logic [MEM_ADDR_WIDTH-1:0] ex_target_pc_i,    // Resolved branch target
@@ -35,13 +31,8 @@ module ctrl_unit
     // ----------------------------------------------------
     //            Pipeline Control Outputs
     // ----------------------------------------------------
-    output logic                      fetch_stall_o,
     output logic                      fetch_flush_o,
-    
-    output logic                      decode_stall_o,
     output logic                      decode_flush_o,
-    
-    output logic                      execute_stall_o,
     output logic                      execute_flush_o,
 
     // Fetch PC Override Interface
@@ -61,13 +52,8 @@ module ctrl_unit
     end
 
     // Default Control Signals
-    fetch_stall_o       = 1'b0;
     fetch_flush_o       = 1'b0;
-    
-    decode_stall_o      = 1'b0;
     decode_flush_o      = 1'b0;
-    
-    execute_stall_o     = 1'b0;
     execute_flush_o     = 1'b0;
     
     redirect_pc_valid_o = 1'b0;
@@ -105,30 +91,6 @@ module ctrl_unit
         // Predicted taken, but it was actually not taken; Jump to PC + 4
         redirect_pc_o = ex_pc_i + 4;
       end
-    end
-
-    // ============================================
-    //                Memory Stall
-    // ============================================
-    else if (ex_mem_stall_i) begin
-      // Memory is busy; freeze the entire front-end of the pipeline
-      fetch_stall_o   = 1'b1;
-      decode_stall_o  = 1'b1;
-      execute_stall_o = 1'b1;
-    end
-    
-    // ============================================
-    //            Load-Use Data Hazard
-    // ============================================
-    else if (dec_load_use_stall_i) begin
-      // Decode needs a register that Execute is currently loading from memory
-      // Freeze Fetch and Decode; allow Execute to proceed so the load finishes
-      fetch_stall_o  = 1'b1;
-      decode_stall_o = 1'b1;
-      
-      // Because Decode is stalled, it won't send valid data to Execute next cycle
-      // Flush the Execute stage input register
-      execute_flush_o = 1'b1;
     end
   end
 

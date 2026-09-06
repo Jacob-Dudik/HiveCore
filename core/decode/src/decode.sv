@@ -24,7 +24,8 @@ module decode
     input  logic rst_n,
 
     input  logic flush,
-    input  logic stall_i,
+    input  logic ready_i,
+    output logic ready_o,
 
     input  logic               [FETCH_WIDTH-1:0]                      instr_valid_i,
     input  logic               [FETCH_WIDTH-1:0] [INSTR_WIDTH-1:0]    instr_i,
@@ -49,7 +50,6 @@ module decode
     input  logic [INT_REG_WIDTH-1:0]                 wb_rf_wdata_i,
 
     // ========= Outputs =========
-    output logic                                     load_use_stall_o,
     output logic               [FETCH_WIDTH-1:0]     instr_valid_o,
     output decode_execute_if_t DE_if_o [FETCH_WIDTH-1:0]
   );
@@ -103,7 +103,10 @@ module decode
   logic [FETCH_WIDTH-1:0] [1:0] fwd_sel_rs2;
   logic [FETCH_WIDTH-1:0]       load_use_stall;
 
-  assign load_use_stall_o = |load_use_stall;
+  logic load_use_stall_detected;
+  assign load_use_stall_detected = |load_use_stall;
+  
+  assign ready_o = ~load_use_stall_detected & ready_i;
 
   genvar i;
   generate
@@ -333,19 +336,23 @@ module decode
   //             Output Register Stage         
   // ============================================
   
-  // Always pass along valid unless a stall or flush occurs
+  // Update the pipeline valid bit if the next stage is ready
   always_ff @(posedge clk) begin
     if (!rst_n || flush) begin
       instr_valid_o <= '0;
-    end else if (!stall_i) begin
-      instr_valid_o <= instr_valid_i;
+    end else if (ready_i) begin
+      if (load_use_stall_detected) begin
+        instr_valid_o <= '0;
+      end else begin
+        instr_valid_o <= instr_valid_i;
+      end
     end
   end
 
-  // Pass data along when the new instruction is valid, otherwise clock gate
+  // Pass data along when the new instruction is valid and we're advancing
   always_ff @(posedge clk) begin
     for (int idx = 0; idx < FETCH_WIDTH; idx++) begin
-      if (!stall_i) begin
+      if (ready_i && !load_use_stall_detected) begin
         DE_if_o[idx] <= instr_valid_i[idx] ? DE_if_d[idx] : DE_if_o[idx]; 
       end
     end
